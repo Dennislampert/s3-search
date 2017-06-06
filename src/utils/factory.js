@@ -2,7 +2,6 @@ export const factory = {
     filter: (doc, order) => {
         const valid = Object.keys(order).every((prop) => {
             const func = Object.prototype.toString.call(doc[prop]);
-
             if (doc.hasOwnProperty(prop) && filterOptions.hasOwnProperty(func)) {
                 return filterOptions[Object.prototype.toString.call(doc[prop])](
                     doc[prop],
@@ -15,10 +14,11 @@ export const factory = {
         return valid ? doc : false;
     },
     all: (doc, order) => {
+        // TODO: return only all matching the filter query
         return doc;
     },
     fields: (doc, order) => {
-        
+        // todo fetch the fields
     },
 }
 
@@ -27,15 +27,15 @@ const filterOptions = {
         Object.keys(b).every((condition) =>
             conditions[condition](a, b[condition])),
     '[object Array]': (a, b) => Object.keys(b).every((condition) => 
+        // TODO: Think if it should handle array deep search, atleast one level
         conditions[condition](a, b[condition])),
     '[object Number]': (a, b) => Object.keys(b).every((condition) => 
         conditions[condition](a, b[condition])),
     '[object Object]': (a, b) => Object.keys(b).every((condition) => 
+        // TODO: think of a object deep search? Not prio
         conditions[condition](Object.keys(a), b[condition])),
-    '[object Boolean]': (a, b) => {
-    console.log('condition:, ',a, b);
-    return Object.keys(b).every((condition) => 
-        conditions[condition](a, b[condition]))},
+    '[object Boolean]': (a, b) => Object.keys(b).every((condition) => 
+        conditions[condition](a, b[condition])),
 };
 
 const conditions = {
@@ -50,12 +50,8 @@ const conditions = {
             (con) => JSON.stringify(description,null,0).indexOf(con) === -1
         ),
     gte: (description, query) => description >= query,
-    lte: (description, query) => {
-        console.log('condition: ',description, query);
-        return description <= query
-        
-    },
+    lte: (description, query) =>description <= query,
     lt: (description, query) => description < query,
     gt: (description, query) => description > query,
-}
+};
 // server cashe get queries response until file change

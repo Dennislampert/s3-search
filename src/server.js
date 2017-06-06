@@ -63,11 +63,8 @@ server.route({
                 type: request.params.type,
                 index: request.params.index,
             };
-            console.log(request.payload);
             const query = request.payload;
-            console.log('ruuun');
             actions[request.params._action](query, event).then((data) => {
-                console.log('insert--data:', data);
                 reply(data);
             }).catch((ex) => {
                 reply(ex);
