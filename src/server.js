@@ -37,15 +37,12 @@ server.route({
                 index: request.params.index,
             };
             const query = {all: {'_id': '*'}};
-            console.log('executing');
             actions[action](query, event).then((event) => {
                 reply(event);
             }).catch((err) => {
-                console.log('catch', err);
-                reply({ error: err });
+                reply({ error: `${err}` });
             });
         } catch (ex) {
-            console.log('catch', ex);
             reply({ error: `${ex}` });
         }
 

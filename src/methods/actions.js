@@ -65,12 +65,9 @@ export const actions = {
     },
     _insert: (query, event) => {
         return new Promise( async (resolve, reject) => {
-            console.log('running _insert');
             try {    
                 const s3 = S3Writer.getInstance(event);
-                console.log('getInstance');
                 const S3Object = await s3.getCurrentData();
-                console.log('S3Object==', S3Object);
                 // NOTE: this will override existing keys
                 if (
                     Object.keys(query).length &&
@@ -104,18 +101,22 @@ export const actions = {
             } 
         });
     },
+    // TODO: add a _UPDATE that search for the id to update and possiblilliyt to change one field without pass all data. Prio!
     _delete: (query, event) => {
-        return new Promise((resolve, reject) => {
-            // TODO await s3 object from S3Writer....
-            const S3Object = {};
+        return new Promise( async (resolve, reject) => {
             try {
+                const s3 = S3Writer.getInstance(event);
+                const S3Object = await s3.getCurrentData();
                 if (query.hasOwnProperty('_id')) {
                     // something like...
                     delete S3Object[query._id];
-                    resolve();
+                    const s3_2 = await S3Writer.getInstance(event);
+                    s3_2.save(S3Object);
+                    resolve({status: 200, message: `Deleted document with id: ${query._id}` });
+                    
                 }
             } catch (ex) {
-                reject();
+                reject(ex);
             } 
         });
     },
