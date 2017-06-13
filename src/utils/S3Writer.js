@@ -1,9 +1,11 @@
 import AWS from 'aws-sdk';
+import EventCache from './EventCache';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 let instances = {};
 
-export default class S3Writer {
+export default class S3Writer extends EventCache {
     constructor(event, instanceId) {
+        super();
         this.s3 = S3Writer.getNewS3Instance();
         // bucet = db
         this.bucket = event.bucket;
@@ -18,17 +20,16 @@ export default class S3Writer {
     static getNewS3Instance() {
         return new AWS.S3({
             httpOptions: {
-                timeout: 2000,
+                timeout: 60000,
             },
-            region: 'eu-west-1',
         });
     }
     
-    get instanceId () {
+    get instanceId() {
         return this._instanceId;
     }
     
-    set instanceId (instanceId) {
+    set instanceId(instanceId) {
         this._instanceId = instanceId;
     }
 
@@ -36,15 +37,10 @@ export default class S3Writer {
         const instanceId = [event.bucket, event.path, event.file].join('-');
         if (instances.hasOwnProperty(instanceId)) {
             // dont run same instance in process
-            return false;
+            return instances[instanceId];
         }
         instances[instanceId] = new S3Writer(event, instanceId);
         return instances[instanceId];
-    }
-    
-    finishInstance() {
-        console.log('finished instacne');
-        delete instances[this.instanceId];
     }
 
     /**
@@ -65,6 +61,11 @@ export default class S3Writer {
      */
     getCurrentData(onlyBodyAsJson = true, params = {}) {
         return new Promise((resolve, reject) => {
+            if (this.cache) {
+                console.log('Found server cache');
+                return resolve(this.cache);
+            }
+            console.log('No-cache found');
             const key = this.getFilePath();
             const s3Params = Object.assign({},
                 params,
@@ -74,10 +75,21 @@ export default class S3Writer {
                 });
             this.s3.getObject(s3Params, (err, data) => {
                 /*
+                    Response incluudes else then Body
+                    {
+                        "AcceptRanges": "bytes",
+                        "LastModified": "2017-06-09T18:17:52.000Z",
+                        "ContentLength": 1289760,
+                        "ETag": "\"7b81d9b687283e28fe02d23e9955750b\"",
+                        "ContentType": "application/octet-stream",
+                        "Metadata": {}
+                    }
+                */
+
+                /*
                  * E.g. first time ever
                  */
                 if (err && err.code === 'NoSuchKey') {
-                    this.finishInstance();
                     return resolve({});
                 } else if (err) {
                     /*
@@ -86,7 +98,6 @@ export default class S3Writer {
                     if (err.statusCode !== 304) {
                         console.log(err, `Error getting s3 key ${key}`);
                     }
-                    this.finishInstance();
                     return reject(err);
                 }
 
@@ -95,19 +106,21 @@ export default class S3Writer {
                         const obj = onlyBodyAsJson
                             ? JSON.parse(data.Body)
                             : data;
-
-                        this.finishInstance();
+                        console.log('saveding envent cache...');
+                        this.cache = obj;
                         return resolve(obj);
                     } catch (e) {
                         console.log(e, 'You are asking for json format but it is not.');
-                        this.finishInstance();
                         return reject(e);
                     }
                 }
-                this.finishInstance();
                 return resolve({});
             });
         });
+    }
+    
+    save(newCacheObject) {
+        this.cache = newCacheObject;
     }
 
     /**
@@ -117,22 +130,24 @@ export default class S3Writer {
      * @param toLowerCase {Boolean.<Optional>}
      * @returns {Promise.<boolean>}
      */
-    async save(data, toLowerCase = false, saveTimestampedCopy = true) {
+    async writeCache(data, toLowerCase = false, backup = false) {
+
         try {
             const tag = new Date().toISOString();
             const keyWithTimestamp = this.getFilePath(tag);
             const currentKey = this.getFilePath();
 
-            if (saveTimestampedCopy) {
+            if (backup) {
                 await this.putData(data, keyWithTimestamp, toLowerCase);
+            } else {
+                await this.putData(data, currentKey, toLowerCase);
             }
-            await this.putData(data, currentKey, toLowerCase);
         } catch (ex) {
             console.log(ex, 'Unable to store channels file to S3.', data);
-            this.finishInstance();
+            this.emit('done');
             return false;
         }
-        this.finishInstance();
+        this.emit('done');
         return true;
     }
 
@@ -143,7 +158,7 @@ export default class S3Writer {
      * @param toLowerCase {Boolean.<Optional>}
      * @returns {Promise}
      */
-    putData(data, key, toLowerCase = true) {
+    putData(data, key, toLowerCase = false) {
         return new Promise((resolve, reject) => {
             let jsonString;
             try {
@@ -153,7 +168,6 @@ export default class S3Writer {
             } catch (ex) {
                 return reject(ex);
             }
-            console.log('jsonString::',jsonString);
             if (jsonString.length < 5) {
                 const error = new Error(
                     `Hmm, incoming json is too short. ${jsonString}`

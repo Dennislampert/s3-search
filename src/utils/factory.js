@@ -1,25 +1,34 @@
 export const factory = {
-    filter: (doc, order) => {
-        const valid = Object.keys(order).every((prop) => {
-            const func = Object.prototype.toString.call(doc[prop]);
-            if (doc.hasOwnProperty(prop) && filterOptions.hasOwnProperty(func)) {
-                return filterOptions[Object.prototype.toString.call(doc[prop])](
-                    doc[prop],
-                    order[prop],
-                    prop
-                );
-            }
-            return false;
-        });
-        return valid ? doc : false;
+    doc: {
+        filter: (doc, order) => {
+            const valid = Object.keys(order).every((prop) => {
+                const func = Object.prototype.toString.call(doc[prop]);
+                if (doc.hasOwnProperty(prop) && filterOptions.hasOwnProperty(func)) {
+                    return filterOptions[Object.prototype.toString.call(doc[prop])](
+                        doc[prop],
+                        order[prop],
+                        prop
+                    );
+                }
+                return false;
+            });
+            return valid ? doc : false;
+        },
+        all: (doc, order) => {
+            return doc;
+        },    
     },
-    all: (doc, order) => {
-        // TODO: return only all matching the filter query
-        return doc;
-    },
-    fields: (doc, order) => {
-        // todo fetch the fields
-    },
+    hit: {
+        fields: (doc, order) => {
+            return order.reduce((acc, field) => {
+                if (doc[field]) {
+                    acc[field] = doc[field];
+                }
+                return acc;
+            }, {});
+        },
+    }
+    
 }
 
 const filterOptions = {
