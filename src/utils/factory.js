@@ -27,16 +27,53 @@ export const factory = {
                 return acc;
             }, {});
         },
+    },
+    hits: {
+        sum: (docs, field) => {
+            return Object.keys(docs).reduce((acc, doc) => {
+                if (!acc[doc._id]['sum']) {
+                    acc[doc._id]['sum'] = 0;
+                }
+                if (+doc[field]) {
+                    acc[doc._id]['sum'] += doc[field];
+                }
+                return acc;
+            }, docs);
+        },
+        sort: (docs, order) => {
+            if (order === 'asc') {
+                
+            } else if (order === 'desc') {
+                
+            }
+            
+        },
+        from: (docs, from) => {
+            const slizeDoc = {};
+            let minFrom = +from || 0;
+            for (let i = minFrom; i < Object.keys(docs).length; i++) {
+                console.log('leeeng',Object.keys(docs).length);
+                slizeDoc[Object.keys(docs)[i]] = docs[Object.keys(docs)[i]];
+            }
+            return slizeDoc;
+        },
+        size: (docs, size) => {
+            const slizeDoc = {};
+            let minSize = +size || 10;
+            for (let i = 0; i < Object.keys(docs).length && i < minSize; i++) {
+                slizeDoc[Object.keys(docs)[i]] = docs[Object.keys(docs)[i]];
+            }
+            return slizeDoc;
+        },
     }
-    
-}
+};
 
 const filterOptions = {
     '[object String]': (a, b) =>
         Object.keys(b).every((condition) =>
             conditions[condition](a, b[condition])),
     '[object Array]': (a, b) => Object.keys(b).every((condition) => 
-        // TODO: Think if it should handle array deep search, atleast one level
+        // TODO: Think if it should handle array deep search, at least one level
         conditions[condition](a, b[condition])),
     '[object Number]': (a, b) => Object.keys(b).every((condition) => 
         conditions[condition](a, b[condition])),

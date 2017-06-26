@@ -9,7 +9,7 @@ export const actions = {
                 const s3 = S3Writer.getInstance(event);
                 // TODO await s3 object from S3Writer....
                 const S3Object = await s3.getCurrentData();
-                const hits = {};
+                let hits = {};
             
                 if (query.hasOwnProperty('_id')) {
                     return S3Object[query._id];
@@ -22,10 +22,10 @@ export const actions = {
                                 jobDoc = factory.doc[jobx](doc, query[jobx]);
                             }
                             if (jobDoc) {
-                                const hit = Object.keys(factory.hit).reduce((acc2, joaby) => {
+                                const hit = Object.keys(factory.hit).reduce((acc2, joby) => {
                                     let jobHit = false;
-                                    if (Object.keys(query).indexOf(joaby) > -1) {
-                                        jobHit = factory.hit[joaby](jobDoc, query[joaby]);
+                                    if (Object.keys(query).indexOf(joby) > -1) {
+                                        jobHit = factory.hit[joby](jobDoc, query[joby]);
                                     } else {
                                         return acc2 = jobDoc;
                                     }
@@ -43,6 +43,19 @@ export const actions = {
                             hits[Object.keys(S3Object)[i]] = result;
                         }
                     }
+                }
+                if (Object.keys(hits).length) {
+                    const mrHits = Object.keys(factory.hits).reduce((acc, jobz) => {
+                        let jobDone = false;
+                        if (Object.keys(query).indexOf(jobz) > -1) {
+                            jobDone = factory.hits[jobz](acc, query[jobz]);
+                        }
+                        if (jobDone) {
+                            return acc = jobDone;
+                        }
+                        return acc;
+                    }, hits);
+                    hits = mrHits;
                 }
                 resolve(hits);
             } catch (ex) {

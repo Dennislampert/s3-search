@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 config();
-const SERVER_PORT = process.env.SERVER_PORT || process.env.PORT || 1989;
+const SERVER_PORT = process.env.SERVER_PORT || process.env.PORT || 8080;
 import Hapi from 'hapi';
 
 
