@@ -42,6 +42,7 @@ If it dont find any field it will not turn the doc. \
 - "gt": `strict` (int)
 - "lte": `strict` (int)
 - "lt": `strict` (int)
+- "sum": `strict` (field, for now it only calculate the sum for each id. For all is to be added when aggregation is in place) Case sensetive
 
 ### _delete
 Delete specified field's in document: \
@@ -89,6 +90,9 @@ Bakup is taken if data has changes since the last uppdate. default 1 \
 > **[√]** Event queue \
 > **[√]** Query fields function \
 > **[√]** Backup time function \
+> **[√]** from and size \
+> **[√]** sum \
+> **[ ]** replace sum to use nice aggregation options like all or each and multply etc.. \
 > **[ ]** Support for deepsearch in array (one level) \
 > **[ ]** Support for deepsearch in obejct (one level) ? \
 > **[ ]** Add tests

@@ -52,7 +52,6 @@ export const factory = {
             const slizeDoc = {};
             let minFrom = +from || 0;
             for (let i = minFrom; i < Object.keys(docs).length; i++) {
-                console.log('leeeng',Object.keys(docs).length);
                 slizeDoc[Object.keys(docs)[i]] = docs[Object.keys(docs)[i]];
             }
             return slizeDoc;
